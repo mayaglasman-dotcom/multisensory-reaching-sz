@@ -6,7 +6,11 @@ The data are not included in this repository.
 
 ## Setup
 
+Install the packages into a new environment, not an existing one such as Anaconda's base, because these versions can conflict with packages already installed there:
+
 ```
+conda create -n reach python=3.12 -y
+conda activate reach
 pip install -r requirements.txt
 ```
 
