@@ -28,6 +28,13 @@ STEPS = [  # (script, what it produces)
     ("make_figs_onset.py", "Figures 2-4 and S1-S3"),
     ("make_fig1_onset.py", "Figure 1"),
     ("table_s1.py", "participant characteristics (Table S1)"),
+    ("smoothness_vs_jerk.py", "how path smoothness relates to jerk, across and within participants"),
+    ("dimensionless_jerk.py", "speed-independent (dimensionless) jerk as a check on the main jerk measure"),
+    ("sparc_check.py", "spectral arc length (SPARC) as a second speed-independent smoothness check"),
+    ("figure2_same_speed.py", "Figure 2 with movement time accounted for"),
+    ("path_measures_vs_movement_time.py", "path smoothness and directness vs movement time, across and within participants"),
+    ("example_reaches.py", "example reaches with similar path smoothness but different jerk"),
+    ("curved_reaches.py", "occasional strongly curved reaches (exploratory)"),
 ]
 NEEDS_CLINICAL = {"extra_checks.py", "table_s1.py"}
 

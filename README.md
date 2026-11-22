@@ -41,6 +41,13 @@ This checks that every participant listed in the trial-duration files has a traj
 | 12 | `thresh.py` | Results at 5%, 10% and 20% onset thresholds (Table S3) |
 | 13 | `make_figs_onset.py`, `make_fig1_onset.py` | Figures 1–4 and S1–S3 |
 | 14 | `table_s1.py` | Participant characteristics (Table S1) |
+| 15 | `smoothness_vs_jerk.py` | How path smoothness relates to jerk, across participants and trial by trial within each participant |
+| 16 | `dimensionless_jerk.py` | Speed-independent (dimensionless) jerk as a check on the main jerk measure |
+| 17 | `sparc_check.py` | Spectral arc length (SPARC) as a second speed-independent smoothness check |
+| 18 | `figure2_same_speed.py` | Figure 2 with movement time accounted for |
+| 19 | `path_measures_vs_movement_time.py` | Path smoothness and directness vs movement time, across and within participants |
+| 20 | `example_reaches.py` | Example reaches with similar path smoothness but different jerk |
+| 21 | `curved_reaches.py` | Occasional strongly curved reaches: group and visibility comparisons (exploratory) |
 
 Steps 11 and 14 need the demographics spreadsheet and are skipped if it is missing.
 

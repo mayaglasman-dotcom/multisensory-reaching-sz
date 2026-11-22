@@ -106,5 +106,6 @@ for k in ["Q1","Q2","Q3","Q4"]:
     paired('onset_only_vis_'+k,ss["Visible Hand"],ss["Invisible Hand"]); d=ss["Visible Hand"]-ss["Invisible Hand"]; grp('onset_only_gxv_'+k,d[gg=="control"],d[gg=="patient"])
 vo=v[v.kept].merge(to[["Group","Subject","Trial"]],on=["Group","Subject","Trial"]).dropna(subset=["smooth_duration","dir_duration"])
 for col in ["smooth_duration","dir_duration"]:
-    sm=vo.groupby(["Group","Subject"])[col].median(); grp('onset_only_'+col+'_median',sm["control"],sm["patient"])
+    for agg in ("mean","median"):
+        sm=vo.groupby(["Group","Subject"])[col].agg(agg); grp(f'onset_only_{col}_{agg}',sm["control"],sm["patient"])
 for k,val in OUT.items(): print(k,'=',val)

@@ -28,7 +28,7 @@ for grp,folder,dpath in [('control',CONTROL_DIR,DUR_CONTROL),('patient',PATIENT_
                 rows.append(dict(Group=grp,Subject=sub,thr=fr,mt=len(xs)/72,Q1=np.log(jerk_power_per_sample(j[:q])),dir=dirn,smooth=sm))
 r=pd.DataFrame(rows)   # missing directness/smoothness drops only those values, not the trial's movement time or jerk
 for fr,d in r.groupby('thr'):
-    s=d.groupby(['Group','Subject']).agg(mt=('mt','mean'),Q1=('Q1','mean'),dir_med=('dir','median'),sm_med=('smooth','median'),sm_mean=('smooth','mean'))
+    s=d.groupby(['Group','Subject']).agg(mt=('mt','mean'),Q1=('Q1','mean'),dir_mean=('dir','mean'),dir_med=('dir','median'),sm_mean=('smooth','mean'),sm_med=('smooth','median'))
     out=[f'thr {fr}']
     for c in s.columns:
         a,b=s.loc['control'][c],s.loc['patient'][c]; out.append(f"{c}: C {a.mean():.4f} P {b.mean():.4f} MW p={stats.mannwhitneyu(a,b).pvalue:.3f}")

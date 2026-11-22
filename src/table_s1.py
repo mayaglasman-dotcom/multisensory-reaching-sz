@@ -3,7 +3,7 @@ import pandas as pd, numpy as np, warnings
 from scipy import stats
 warnings.filterwarnings("ignore")
 from config import CLINICAL_XLSX as x
-d=pd.read_excel(x,'Demographics'); d=d[d['Record ID'].notna()].copy(); d['Record ID']=d['Record ID'].str.strip()
+d=pd.read_excel(x,'Demographics'); d=d[d['Record ID'].notna()].copy(); d['Record ID']=d['Record ID'].astype(str).str.replace(r'\s*\(.*\)\s*$','',regex=True).str.strip()   # drop notes such as 'PC-C19 (also SZR-1019)'
 m={'C02':'PC-C16','C03':'PC-C18','C04':'PC-C19','C05':'PC-C21','C06':'PC-C22','C07':'PC-C20','C08':'PC-C24','C09':'PC-C25',
    'S02':'PC-S02','S05':'PC-S06','S06':'PC-S16','S07':'PC-S22','S09':'PC-S12','S10':'PC-S23'}
 q=pd.read_csv('q1_final_subject.csv')[['Group','Subject']]   # the 57 analyzed participants

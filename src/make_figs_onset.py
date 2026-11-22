@@ -57,10 +57,10 @@ else:
     vtxt="visible − hidden: "+", ".join(f"{k} {fmtp(pv[k])}" for k in Qs)
 ax.text(0.5,0.97,vtxt,transform=ax.transAxes,ha="center",va="top",fontsize=8.5,color=MUTED)
 lo,hi=ax.get_ylim(); ax.set_ylim(lo-0.35*(hi-lo),hi+0.12*(hi-lo))
-for ax,col,ttl,lab in [(axs[1],"smooth_duration","Smoothness","Smoothness (R², per-person median)"),
-                       (axs[2],"dir_duration","Directness","Directness (per-person median)")]:
+for ax,col,ttl,lab in [(axs[1],"smooth_duration","Smoothness","Smoothness (R², per-person mean)"),
+                       (axs[2],"dir_duration","Directness","Directness (per-person mean)")]:
     panel(ax,"B" if col=="smooth_duration" else "C")
-    s=ds.groupby(["Group","Subject","Visibility"])[col].median().unstack()
+    s=ds.groupby(["Group","Subject","Visibility"])[col].mean().unstack()   # per-person means (main summary)
     for g in G:
         d=s.loc[g]; x=[0,1] ; off=-0.05 if g=="control" else 0.05
         m=[d["Visible Hand"].mean(),d["Invisible Hand"].mean()]; e=[d["Visible Hand"].sem(),d["Invisible Hand"].sem()]
@@ -69,7 +69,7 @@ for ax,col,ttl,lab in [(axs[1],"smooth_duration","Smoothness","Smoothness (R², 
     p=vis_p((s["Visible Hand"]-s["Invisible Hand"]).dropna())   # computed, same rule as the paper
     ax.set_title(f"{ttl}\nvisible vs. hidden: {fmtp(p)}",loc="left",fontsize=11)
 axs[1].legend(fontsize=8.5)
-plt.tight_layout(); plt.savefig(OUT+"Figure2_visibility.png"); plt.close()
+plt.tight_layout(); plt.savefig(OUT+"Figure2_visibility_unadjusted.png"); plt.close()
 
 # ---------- Figure 3: group by quarter
 fig,ax=plt.subplots(figsize=(6.5,4.5))

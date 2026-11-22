@@ -1,4 +1,4 @@
-# Extra checks reported in the paper: age and schizophrenia-only checks, pre-movement analysis of the original windows,
+# Extra checks reported in the paper: age, schizophrenia-only and leave-one-out checks, pre-movement analysis of the original windows,
 # and carryover with all participants included. Run after the pipeline and recompute.py (needs trials.csv).
 import sys; sys.path.insert(0, ".")
 import numpy as np, pandas as pd, statsmodels.formula.api as smf, warnings
@@ -9,21 +9,44 @@ q = pd.read_csv("q1_final_subject.csv")
 
 # demographics (Supplementary Table S1 source file)
 from config import CLINICAL_XLSX as X, CONTROL_DIR, PATIENT_DIR, DUR_CONTROL, DUR_PATIENT
-d = pd.read_excel(X, "Demographics"); d = d[d["Record ID"].notna()].copy(); d["Record ID"] = d["Record ID"].str.strip()
+d = pd.read_excel(X, "Demographics"); d = d[d["Record ID"].notna()].copy(); d["Record ID"] = d["Record ID"].astype(str).str.replace(r"\s*\(.*\)\s*$", "", regex=True).str.strip()   # drop notes such as "PC-C19 (also SZR-1019)"
 ID = {'C02':'PC-C16','C03':'PC-C18','C04':'PC-C19','C05':'PC-C21','C06':'PC-C22','C07':'PC-C20','C08':'PC-C24','C09':'PC-C25',
       'S02':'PC-S02','S05':'PC-S06','S06':'PC-S16','S07':'PC-S22','S09':'PC-S12','S10':'PC-S23'}
-ds = pd.read_csv("subject_directness_smoothness_duration.csv")[["Subject", "smooth_duration"]]
-S = q[["Group", "Subject", "duration"]].merge(ds, on="Subject")
+v = pd.read_csv("reach_definitions_trials.csv"); v = v[v.kept]
+P = v.groupby("Subject").agg(smooth_mean=("smooth_duration", "mean"), smooth_median=("smooth_duration", "median"),
+                             dir_mean=("dir_duration", "mean"), dir_median=("dir_duration", "median")).reset_index()
+S = q[["Group", "Subject", "duration", "Q1", "Q2", "Q3", "Q4"]].merge(P, on="Subject")
 S["RID"] = S.Subject.map(lambda s: ID.get(s, s))
 S = S.merge(d[["Record ID", "Age", "Primary Diagnosis"]], left_on="RID", right_on="Record ID", how="left")
-S["Age"] = pd.to_numeric(S.Age, errors="coerce"); S["dx"] = S["Primary Diagnosis"].astype(str).str.strip()
-for y in ["duration", "smooth_duration"]:
-    m = smf.ols(f"{y} ~ Group + Age", S).fit(); print("age model", y, "group p", round(m.pvalues["Group[T.patient]"], 4), "n", int(m.nobs))
+S["Age"] = pd.to_numeric(S.Age, errors="coerce").where(lambda v: v >= 0)   # negative codes (e.g. -888) are missing
+S["dx"] = S["Primary Diagnosis"].astype(str).str.strip()
+MEAS = ["duration", "smooth_mean", "smooth_median", "dir_mean", "dir_median", "Q1", "Q2", "Q3", "Q4"]
+
+# age: is it related to the measures, across participants and within each group?
+A = S.dropna(subset=["Age"])
+print("age n:", A.groupby("Group").size().to_dict())
+for y in MEAS:
+    line = f"age vs {y}:"
+    for g, Z in [("all", A), *A.groupby("Group")]:
+        r = stats.spearmanr(Z.Age, Z[y]); line += f" {g} rho={r[0]:+.2f} p={r[1]:.3f};"
+    print(line)
+print("age smallest p:", round(min(stats.spearmanr(Z.Age, Z[y])[1] for y in MEAS for Z in [A, *[z for _, z in A.groupby("Group")]]), 3))
+
+# age and jerk: group difference with age in the model, and the patients' larger late-reach visibility effect
+# (same movement time: per-person regression of trial jerk on visibility and log movement time) with age in the model
+tq = pd.read_csv("q1_final_trials.csv"); tq["lmt"] = np.log(tq.duration); tq["vis"] = (tq.Visibility == "Visible Hand").astype(float)
+E = pd.DataFrame([dict(Subject=s, **{k: smf.ols(f"{k} ~ vis + lmt", z).fit().params["vis"] for k in ["Q1", "Q2", "Q3", "Q4"]})
+                  for s, z in tq.groupby("Subject")])
+AE = A[["Group", "Subject", "Age", "duration", "Q1", "Q2", "Q3", "Q4"]].merge(E, on="Subject", suffixes=("", "_vis"))
+for k in ["Q1", "Q2", "Q3", "Q4"]:
+    m = smf.ols(f"{k} ~ Group + Age", AE).fit(); g = smf.ols(f"{k}_vis ~ Group + Age", AE).fit()
+    print(f"age model {k}: jerk group p = {m.pvalues['Group[T.patient]']:.3f}; same-speed visibility effect group p = {g.pvalues['Group[T.patient]']:.3f} (age p = {g.pvalues['Age']:.3f})")
+
+# schizophrenia diagnoses only, and leave-one-out
+for y in ["duration", "smooth_mean", "smooth_median", "dir_mean"]:
     Z = S[(S.Group == "control") | S.dx.isin(["SZ", "SZ/SZA"])]; c, p = Z[Z.Group == "control"][y], Z[Z.Group == "patient"][y]
     u = stats.mannwhitneyu(c, p); print("SZ only", y, "n", len(c), len(p), "U", min(u.statistic, len(c)*len(p)-u.statistic), "p", round(u.pvalue, 4))
-
-# leave-one-out
-for y, test in [("duration", "t"), ("smooth_duration", "MW")]:
+for y, test in [("duration", "MW"), ("smooth_mean", "MW"), ("smooth_median", "MW")]:
     ps = []
     for s in S.Subject:
         Z = S[S.Subject != s]; c, p = Z[Z.Group == "control"][y], Z[Z.Group == "patient"][y]
