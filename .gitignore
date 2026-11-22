@@ -1,0 +1,11 @@
+# participant data never goes in the repository
+data/*
+!data/README.md
+
+# generated outputs
+results/
+figures/
+
+__pycache__/
+*.pyc
+.DS_Store
