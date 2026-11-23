@@ -1,4 +1,4 @@
-"""Example reaches with similar path smoothness but different jerk.
+"""Example reaches with similar path smoothness but different jerk, with a 3D view of each path.
 
 Each row compares reaches by two different people, with the same hand visibility, distance, direction and path smoothness.
 Row A: same movement time; one speeds up and slows down in one smooth burst, the other unevenly (more jerk).
@@ -31,9 +31,10 @@ def trace(row):
     key = (folder, str(row.Subject))
     if key not in _cache:
         dur = pd.read_csv(dpath)
-        _cache[key] = (pd.read_csv(os.path.join(folder, f"raw_{fname(row.Subject)}_Trajectories.csv")),
-                       dur[dur.Subject.astype(str) == str(row.Subject)].set_index("Trial").trialDuration)
-    traj, dur = _cache[key]
+        ds = dur[dur.Subject.astype(str) == str(row.Subject)].set_index("Trial")
+        _cache[key] = (pd.read_csv(os.path.join(folder, f"raw_{fname(row.Subject)}_Trajectories.csv")), ds.trialDuration,
+                       ds[["Ball Pos X", "Ball Pos Y", "Ball Pos Z"]])
+    traj, dur = _cache[key][:2]
     tdf = add_lowpass(traj[traj.Trial == row.Trial])
     n = int(np.floor(dur[row.Trial] * SR))
     w = onset_trim(tdf.iloc[-(n + 1):] if n < len(tdf) else tdf)
@@ -88,23 +89,40 @@ def best_pair(kind):
 
 pairs = [("A", "Same movement time and path smoothness, uneven vs. even speed", best_pair("same_speed")),
          ("B", "Same path smoothness, both even speed, one fast and one slow", best_pair("speed"))]
-fig, axs = plt.subplots(2, 3, figsize=(13, 9))
-fig.subplots_adjust(left=0.06, right=0.98, top=0.93, bottom=0.13, hspace=0.95, wspace=0.32)
+fig = plt.figure(figsize=(18, 9.5))
+gs = fig.add_gridspec(2, 4, left=0.03, right=0.985, top=0.92, bottom=0.14, hspace=0.95, wspace=0.3, width_ratios=[1.6, 1, 1, 1])
 for r, (lab, title, (hi, lo)) in enumerate(pairs):
+    ax3 = fig.add_subplot(gs[r, 0], projection="3d")
+    axs = [fig.add_subplot(gs[r, c]) for c in (1, 2, 3)]
     print(f"{lab}: {hi.Visibility}; {hi.Group} {hi.Subject} trial {hi.Trial} vs {lo.Group} {lo.Subject} trial {lo.Trial}")
+    handles = []
     for k, row in enumerate((hi, lo)):
         P, v, jk = trace(row)
         tt = np.arange(len(v)) * DT * 1000
         name = f"{'Person 1' if k == 0 else 'Person 2'} ({'control' if row.Group == 'control' else 'patient'}), {'more' if k == 0 else 'less'} jerk: jerk {row.whole:.1f}, path R² {row.smooth_duration:.3f}, {row.duration:.2f} s, {row.dist*100:.0f} cm, {'one smooth speed burst' if row.peaks == 1 else 'uneven speed'}"
         print("   ", name)
-        axs[r, 0].plot((P[:, 0] - P[0, 0]) * 100, (P[:, 2] - P[0, 2]) * 100, color=COL[k], marker="o", ms=3, label=name)
-        axs[r, 1].plot(tt, v * 100, color=COL[k], marker="o", ms=3)
-        axs[r, 2].plot(tt, jk, color=COL[k], marker="o", ms=3)
-    axs[r, 0].set(xlabel="Left–right (cm)", ylabel="Forward (cm)"); axs[r, 0].set_aspect("equal", adjustable="datalim")
-    axs[r, 0].legend(fontsize=8.5, loc="upper left", bbox_to_anchor=(0, -0.22), frameon=False)
-    axs[r, 1].set(xlabel="Time from movement onset (ms)", ylabel="Hand speed (cm/s)")
-    axs[r, 2].set(xlabel="Time from movement onset (ms)", ylabel="Jerk (m/s³)")
-    axs[r, 0].set_title(f"{lab}  {title}\nPath seen from above", loc="left", fontsize=11)
-    axs[r, 1].set_title("Speed", loc="left", fontsize=11); axs[r, 2].set_title("Jerk", loc="left", fontsize=11)
+        col = COL[0] if row.Group == "control" else COL[1]   # blue controls, orange patients, as in the other figures
+        D = (P - P[0]) * 100   # cm from the reach's start
+        ax3.plot(D[:, 0], D[:, 2], D[:, 1], color=col, marker="o", ms=2.5, lw=1.5)
+        ax3.scatter(*D[0, [0, 2, 1]], color=col, s=30, marker="s")
+        tgt = _cache[(CONTROL_DIR if row.Group == "control" else PATIENT_DIR, str(row.Subject))][2].loc[row.Trial].to_numpy()
+        T = (tgt - P[0]) * 100
+        ax3.scatter(T[0], T[2], T[1], color=col, s=90, marker="*", edgecolor=INK, linewidth=0.5)
+        print(f"     target from start (cm): {np.round(T, 1)}; hand end from start: {np.round(D[-1], 1)}")
+        handles += axs[0].plot(D[:, 0], D[:, 2], color=col, marker="o", ms=3, label=name)
+        axs[1].plot(tt, v * 100, color=col, marker="o", ms=3)
+        axs[2].plot(tt, jk, color=col, marker="o", ms=3)
+    ax3.set_xlabel("Left–right (cm)", labelpad=2); ax3.set_ylabel("Forward (cm)", labelpad=2); ax3.set_zlabel("Up–down (cm)", labelpad=2)
+    ax3.set_box_aspect((1, 1, 1), zoom=1.2); ax3.view_init(elev=20, azim=-60); ax3.tick_params(labelsize=8, pad=0)
+    lim = np.array([ax3.get_xlim3d(), ax3.get_ylim3d(), ax3.get_zlim3d()]); c, h = lim.mean(1), (lim[:, 1] - lim[:, 0]).max() / 2
+    ax3.set_xlim3d(c[0] - h, c[0] + h); ax3.set_ylim3d(c[1] - h, c[1] + h); ax3.set_zlim3d(c[2] - h, c[2] + h)
+    ax3.set_title(f"{lab}  {title}\n3D path (square = start, star = target), cm", loc="left", fontsize=11)
+    axs[0].set(xlabel="Left–right (cm)", ylabel="Forward (cm)"); axs[0].set_aspect("equal", adjustable="datalim")
+    axs[1].set(xlabel="Time from movement onset (ms)", ylabel="Hand speed (cm/s)")
+    axs[2].set(xlabel="Time from movement onset (ms)", ylabel="Jerk (m/s³)")
+    axs[0].set_title("Path seen from above", loc="left", fontsize=11)
+    axs[1].set_title("Speed", loc="left", fontsize=11); axs[2].set_title("Jerk", loc="left", fontsize=11)
+    fig.legend(handles=handles, fontsize=9, loc="upper left", frameon=False,
+               bbox_to_anchor=(0.03, axs[0].get_position().y0 - 0.075))
 fig.savefig(str(FIG_DIR / "example_reaches.png"), dpi=300)
 print("saved", FIG_DIR / "example_reaches.png")

@@ -43,18 +43,18 @@ sv=mm.groupby(["Group","Subject","Visibility"])[Qs].mean().reset_index()
 for g in G:
     for vv,ls,mk,fc in [("Visible Hand","-","o",C[g]),("Invisible Hand","--","o","white")]:
         d=sv[(sv.Group==g)&(sv.Visibility==vv)][Qs]
-        off=(-0.06 if g=="control" else 0.06)+(-0.02 if vv=="Visible Hand" else 0.02)
+        off=0   # groups and conditions plotted at the same x positions
         ax.errorbar(np.arange(4)+off,d.mean(),yerr=d.sem(),color=C[g],ls=ls,marker=mk,mfc=fc,mec=C[g],ms=7,mew=1.6,capsize=3,
-                    label=f"{LAB[g]}, hand {'visible' if vv=='Visible Hand' else 'hidden'}")
+                    label=f"{LAB[g]}, hand {'visible' if vv=='Visible Hand' else 'invisible'}")
 ax.set_xticks(range(4)); ax.set_xticklabels(QL); ax.set_ylabel("Jerk (log mean squared jerk)")
 ax.set_title("Jerk across the reach",loc="left",fontsize=11)
 ax.legend(fontsize=8,loc="lower center",ncol=2,frameon=False)
 w=sv.pivot_table(index="Subject",columns="Visibility",values=Qs); dv={k:(w[(k,"Visible Hand")]-w[(k,"Invisible Hand")]).dropna() for k in Qs}
 pv={k:vis_p(dv[k]) for k in Qs}; pmax=max(pv.values())
 if all(dv[k].mean()>0 for k in Qs) and pmax<0.05:   # only claim it when every quarter shows it
-    vtxt="visible > hidden in every quarter (all p < 0.001)" if pmax<0.001 else f"visible > hidden in every quarter (all p ≤ {pmax:.3f})"
+    vtxt="visible > invisible in every quarter (all p < 0.001)" if pmax<0.001 else f"visible > invisible in every quarter (all p ≤ {pmax:.3f})"
 else:
-    vtxt="visible − hidden: "+", ".join(f"{k} {fmtp(pv[k])}" for k in Qs)
+    vtxt="visible − invisible: "+", ".join(f"{k} {fmtp(pv[k])}" for k in Qs)
 ax.text(0.5,0.97,vtxt,transform=ax.transAxes,ha="center",va="top",fontsize=8.5,color=MUTED)
 lo,hi=ax.get_ylim(); ax.set_ylim(lo-0.35*(hi-lo),hi+0.12*(hi-lo))
 for ax,col,ttl,lab in [(axs[1],"smooth_duration","Smoothness","Smoothness (R², per-person mean)"),
@@ -62,19 +62,19 @@ for ax,col,ttl,lab in [(axs[1],"smooth_duration","Smoothness","Smoothness (R², 
     panel(ax,"B" if col=="smooth_duration" else "C")
     s=ds.groupby(["Group","Subject","Visibility"])[col].mean().unstack()   # per-person means (main summary)
     for g in G:
-        d=s.loc[g]; x=[0,1] ; off=-0.05 if g=="control" else 0.05
+        d=s.loc[g]; x=[0,1] ; off=0
         m=[d["Visible Hand"].mean(),d["Invisible Hand"].mean()]; e=[d["Visible Hand"].sem(),d["Invisible Hand"].sem()]
         ax.errorbar(np.array(x)+off,m,yerr=e,color=C[g],marker="o",ms=7,capsize=3,label=LAB[g])
-    ax.set_xticks([0,1]); ax.set_xticklabels(["Hand\nvisible","Hand\nhidden"]); ax.set_xlim(-0.4,1.4); ax.set_ylabel(lab)
+    ax.set_xticks([0,1]); ax.set_xticklabels(["Hand\nvisible","Hand\ninvisible"]); ax.set_xlim(-0.4,1.4); ax.set_ylabel(lab)
     p=vis_p((s["Visible Hand"]-s["Invisible Hand"]).dropna())   # computed, same rule as the paper
-    ax.set_title(f"{ttl}\nvisible vs. hidden: {fmtp(p)}",loc="left",fontsize=11)
+    ax.set_title(f"{ttl}\nvisible vs. invisible: {fmtp(p)}",loc="left",fontsize=11)
 axs[1].legend(fontsize=8.5)
 plt.tight_layout(); plt.savefig(OUT+"Figure2_visibility_unadjusted.png"); plt.close()
 
 # ---------- Figure 3: group by quarter
 fig,ax=plt.subplots(figsize=(6.5,4.5))
 for g in G:
-    d=q[q.Group==g][Qs]; off=-0.05 if g=="control" else 0.05
+    d=q[q.Group==g][Qs]; off=0
     ax.errorbar(np.arange(4)+off,d.mean(),yerr=d.sem(),color=C[g],marker="o",ms=7,capsize=3,label=f"{LAB[g]} (n = {len(d)})")
 ax.set_xticks(range(4)); ax.set_xticklabels(QL); ax.set_ylabel("Jerk (log mean squared jerk)")
 gp={k:grp_p(q[q.Group=="control"][k],q[q.Group=="patient"][k]) for k in Qs}; sig=[k for k in Qs if gp[k]<0.05]

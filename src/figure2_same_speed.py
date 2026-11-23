@@ -92,26 +92,26 @@ ax = axs[0]
 for g in G:
     for cond, ls, fc in (("visible", "-", C[g]), ("hidden", "--", "white")):
         m = np.array([A[k][A[k].Group == g][cond].mean() for k in Qs]); e = np.array([A[k][A[k].Group == g][cond].sem() for k in Qs])
-        off = (-0.06 if g == "control" else 0.06) + (-0.02 if cond == "visible" else 0.02)
+        off = 0   # groups and conditions plotted at the same x positions
         ax.errorbar(np.arange(4) + off, m, yerr=e, color=C[g], ls=ls, marker="o", mfc=fc, mec=C[g], ms=7, mew=1.6, capsize=3,
-                    label=f"{LAB[g]}, hand {cond}")
+                    label=f"{LAB[g]}, hand {'visible' if cond == 'visible' else 'invisible'}")
 ax.set_xticks(range(4)); ax.set_xticklabels(["Q1\n(start)", "Q2", "Q3", "Q4\n(end)"]); ax.set_ylabel("Jerk (log mean squared jerk)")
-ax.set_title("Jerk across the reach, same movement time", loc="left", fontsize=11)
+ax.set_title("Jerk across the reach, movement time controlled", loc="left", fontsize=11)
 ax.legend(fontsize=8, loc="lower center", ncol=2)
 pmax = max(res[f"jerk {k}"][0] for k in Qs)
-ax.text(0.5, 0.97, f"visible > hidden in every quarter (all p ≤ {pmax:.3f})" if all(A[k].effect.mean() > 0 for k in Qs) and pmax < 0.05
-        else "visible − hidden: " + ", ".join(f"{k} {fmtp(res[f'jerk {k}'][0])}" for k in Qs),
+ax.text(0.5, 0.97, f"visible > invisible in every quarter (all p ≤ {pmax:.3f})" if all(A[k].effect.mean() > 0 for k in Qs) and pmax < 0.05
+        else "visible − invisible: " + ", ".join(f"{k} {fmtp(res[f'jerk {k}'][0])}" for k in Qs),
         transform=ax.transAxes, ha="center", va="top", fontsize=8.5, color=MUTED)
 lo, hi = ax.get_ylim(); ax.set_ylim(lo - 0.35 * (hi - lo), hi + 0.12 * (hi - lo))
 for ax, col, ttl, lab in ((axs[1], "smooth_duration", "Path smoothness", "Path smoothness (R², per-person mean)"),
                           (axs[2], "dir_duration", "Directness", "Directness (per-person mean)")):
     m, p = raw[col]
     for g in G:
-        dd = m.loc[g]; off = -0.05 if g == "control" else 0.05
+        dd = m.loc[g]; off = 0
         ax.errorbar(np.array([0, 1]) + off, [dd["Visible Hand"].mean(), dd["Invisible Hand"].mean()],
                     yerr=[dd["Visible Hand"].sem(), dd["Invisible Hand"].sem()], color=C[g], marker="o", ms=7, capsize=3, label=LAB[g])
-    ax.set_xticks([0, 1]); ax.set_xticklabels(["Hand\nvisible", "Hand\nhidden"]); ax.set_xlim(-0.4, 1.4); ax.set_ylabel(lab)
-    ax.set_title(f"{ttl}\nvisible vs. hidden: {fmtp(p)}", loc="left", fontsize=11)
+    ax.set_xticks([0, 1]); ax.set_xticklabels(["Hand\nvisible", "Hand\ninvisible"]); ax.set_xlim(-0.4, 1.4); ax.set_ylabel(lab)
+    ax.set_title(f"{ttl}\nvisible vs. invisible: {fmtp(p)}", loc="left", fontsize=11)
 axs[2].legend(fontsize=8)
 for ax, l in zip(axs, "ABC"):
     ax.text(-0.14, 1.06, l, transform=ax.transAxes, fontsize=13, fontweight="bold", va="bottom")
