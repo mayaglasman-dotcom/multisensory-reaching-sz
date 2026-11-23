@@ -89,8 +89,8 @@ ax.legend(loc="lower right"); plt.tight_layout(); plt.savefig(OUT+"Figure3_group
 
 # ---------- Figure 4: carryover
 s=pd.read_csv(R+"carryover_slopes_by_transition_no_outliers.csv"); tt=pd.read_csv(R+"transition_table.csv").set_index("transition")
-order=[("visible_to_visible","Visible → visible"),("invisible_to_invisible","Hidden → hidden"),
-       ("visible_to_invisible","Visible → hidden"),("invisible_to_visible","Hidden → visible")]
+order=[("visible_to_visible","Visible → visible"),("invisible_to_invisible","Invisible → invisible"),
+       ("visible_to_invisible","Visible → invisible"),("invisible_to_visible","Invisible → visible")]
 fig,axs=plt.subplots(1,4,figsize=(13,4),sharey=True)
 for i,(ax,(k,lab)) in enumerate(zip(axs,order)):
     d=s[s.transition==k]; strip(ax,{g:d[d.Group==g].slope.reset_index(drop=True) for g in G},"mean","Carryover slope" if i==0 else "")
